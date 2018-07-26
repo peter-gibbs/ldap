@@ -10,18 +10,17 @@ import (
 
 // https://tools.ietf.org/html/rfc4533
 const (
-    ControlTypeSyncRequest = "1.3.6.1.4.1.4203.1.9.1.1"
-    ControlTypeSyncState = "1.3.6.1.4.1.4203.1.9.1.2"
-    ControlTypeSyncDone = "1.3.6.1.4.1.4203.1.9.1.3"
+	ControlTypeSyncRequest = "1.3.6.1.4.1.4203.1.9.1.1"
+	ControlTypeSyncState   = "1.3.6.1.4.1.4203.1.9.1.2"
+	ControlTypeSyncDone    = "1.3.6.1.4.1.4203.1.9.1.3"
 )
 
 type ControlSyncRequest struct {
-    Criticality bool
-    Mode        int   // ENUMERATED 1=refreshOnly 3=refreshAndPersist
-    Cookie      []byte // syncCookie OPTIONAL
-    ReloadHint  bool   // BOOLEAN DEFAULT FALSE
+	Criticality bool
+	Mode        int    // ENUMERATED 1=refreshOnly 3=refreshAndPersist
+	Cookie      []byte // syncCookie OPTIONAL
+	ReloadHint  bool   // BOOLEAN DEFAULT FALSE
 }
-
 
 func init() {
 	// ControlTypeMap maps controls to text descriptions
@@ -36,31 +35,31 @@ func init() {
 }
 
 func NewControlSyncRequest(criticality bool, mode int, cookie []byte, reloadHint bool) *ControlSyncRequest {
-    return &ControlSyncRequest{
-        Criticality: criticality,
-        Mode:        mode,
-        Cookie:      cookie,
-        ReloadHint:  reloadHint,
-    }
+	return &ControlSyncRequest{
+		Criticality: criticality,
+		Mode:        mode,
+		Cookie:      cookie,
+		ReloadHint:  reloadHint,
+	}
 }
 
 func (c *ControlSyncRequest) Encode() *ber.Packet {
-    packet := ber.Encode(ber.ClassUniversal, ber.TypeConstructed, ber.TagSequence, nil, "Control")
-    packet.AppendChild(ber.NewString(ber.ClassUniversal, ber.TypePrimitive, ber.TagOctetString, ControlTypeSyncRequest, "Control Type (Sync Request)"))
-    packet.AppendChild(ber.NewBoolean(ber.ClassUniversal, ber.TypePrimitive, ber.TagBoolean, c.Criticality, "Criticality"))
+	packet := ber.Encode(ber.ClassUniversal, ber.TypeConstructed, ber.TagSequence, nil, "Control")
+	packet.AppendChild(ber.NewString(ber.ClassUniversal, ber.TypePrimitive, ber.TagOctetString, ControlTypeSyncRequest, "Control Type (Sync Request)"))
+	packet.AppendChild(ber.NewBoolean(ber.ClassUniversal, ber.TypePrimitive, ber.TagBoolean, c.Criticality, "Criticality"))
 
-    p2 := ber.Encode(ber.ClassUniversal, ber.TypePrimitive, ber.TagOctetString, nil, "Control Value (Sync Request)")
-    seq := ber.Encode(ber.ClassUniversal, ber.TypeConstructed, ber.TagSequence, nil, "Sync Request Value")
-    seq.AppendChild(ber.NewInteger(ber.ClassUniversal, ber.TypePrimitive, ber.TagEnumerated, int64(c.Mode), "Mode"))
-    cookie := ber.Encode(ber.ClassUniversal, ber.TypePrimitive, ber.TagOctetString, nil, "Cookie")
-    cookie.Value = c.Cookie
-    cookie.Data.Write(c.Cookie)
-    seq.AppendChild(cookie)
-    seq.AppendChild(ber.NewBoolean(ber.ClassUniversal, ber.TypePrimitive, ber.TagBoolean, c.ReloadHint, "Reload Hint"))
-    p2.AppendChild(seq)
+	p2 := ber.Encode(ber.ClassUniversal, ber.TypePrimitive, ber.TagOctetString, nil, "Control Value (Sync Request)")
+	seq := ber.Encode(ber.ClassUniversal, ber.TypeConstructed, ber.TagSequence, nil, "Sync Request Value")
+	seq.AppendChild(ber.NewInteger(ber.ClassUniversal, ber.TypePrimitive, ber.TagEnumerated, int64(c.Mode), "Mode"))
+	cookie := ber.Encode(ber.ClassUniversal, ber.TypePrimitive, ber.TagOctetString, nil, "Cookie")
+	cookie.Value = c.Cookie
+	cookie.Data.Write(c.Cookie)
+	seq.AppendChild(cookie)
+	seq.AppendChild(ber.NewBoolean(ber.ClassUniversal, ber.TypePrimitive, ber.TagBoolean, c.ReloadHint, "Reload Hint"))
+	p2.AppendChild(seq)
 
-    packet.AppendChild(p2)
-    return packet
+	packet.AppendChild(p2)
+	return packet
 }
 
 // Decode returns a control read from the given packet, or nil if no recognized control can be made
@@ -69,7 +68,7 @@ func (c *ControlSyncRequest) Decode(ControlType string, Criticality bool, value 
 }
 
 func (c *ControlSyncRequest) GetControlType() string {
-    return ControlTypeSyncRequest
+	return ControlTypeSyncRequest
 }
 
 // String returns a human-readable description
@@ -84,15 +83,14 @@ func (c *ControlSyncRequest) String() string {
 		c.Cookie)
 }
 
-
 type ControlSyncState struct {
-    State        int   // ENUMERATED 0=present, 1=add, 2=modify, 3=delete
-	EntryUUID	[]byte	// syncUUID
-    Cookie      []byte // syncCookie OPTIONAL
+	State     uint32    // ENUMERATED 0=present, 1=add, 2=modify, 3=delete
+	EntryUUID []byte // syncUUID
+	Cookie    []byte // syncCookie OPTIONAL
 }
 
 func (c *ControlSyncState) GetControlType() string {
-    return ControlTypeSyncState
+	return ControlTypeSyncState
 }
 
 func (c *ControlSyncState) Encode() *ber.Packet {
@@ -101,7 +99,21 @@ func (c *ControlSyncState) Encode() *ber.Packet {
 
 // Decode returns a control read from the given packet, or nil if no recognized control can be made
 func (c *ControlSyncState) Decode(ControlType string, Criticality bool, value *ber.Packet) (Control, error) {
-	return nil, nil
+	c = new(ControlSyncState)
+	if value.Value != nil {
+		valueChildren, err := ber.DecodePacketErr(value.Data.Bytes())
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode data bytes: %s", err)
+		}
+		value.Data.Truncate(0)
+		value.Value = nil
+		value.AppendChild(valueChildren)
+	}
+	value = value.Children[0]
+	c.State = uint32(value.Children[0].Value.(int64))
+	c.EntryUUID = value.Children[1].Data.Bytes()
+	c.Cookie = value.Children[2].Data.Bytes()
+	return c, nil
 }
 
 func (c *ControlSyncState) String() string {
@@ -114,15 +126,14 @@ func (c *ControlSyncState) String() string {
 		c.Cookie)
 }
 
-
 type ControlSyncDone struct {
-    Criticality bool
-    Cookie      []byte // syncCookie OPTIONAL
-    RefreshDeletes  bool   // BOOLEAN DEFAULT FALSE
+	Criticality    bool
+	Cookie         []byte // syncCookie OPTIONAL
+	RefreshDeletes bool   // BOOLEAN DEFAULT FALSE
 }
 
 func (c *ControlSyncDone) GetControlType() string {
-    return ControlTypeSyncDone
+	return ControlTypeSyncDone
 }
 
 func (c *ControlSyncDone) Encode() *ber.Packet {
@@ -131,21 +142,21 @@ func (c *ControlSyncDone) Encode() *ber.Packet {
 
 // Decode returns a control read from the given packet, or nil if no recognized control can be made
 func (c *ControlSyncDone) Decode(ControlType string, Criticality bool, value *ber.Packet) (Control, error) {
-		c = new(ControlSyncDone)
-		c.Criticality = Criticality
-		if value.Value != nil {
-			valueChildren, err := ber.DecodePacketErr(value.Data.Bytes())
-			if err != nil {
-				return nil, fmt.Errorf("failed to decode data bytes: %s", err)
-			}
-			value.Data.Truncate(0)
-			value.Value = nil
-			value.AppendChild(valueChildren)
+	c = new(ControlSyncDone)
+	c.Criticality = Criticality
+	if value.Value != nil {
+		valueChildren, err := ber.DecodePacketErr(value.Data.Bytes())
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode data bytes: %s", err)
 		}
-		value = value.Children[0]
-		c.Cookie = value.Children[0].Data.Bytes()
-		//c.RefreshDeletes = uint32(value.Children[0].Value.(int64))
-		return c, nil
+		value.Data.Truncate(0)
+		value.Value = nil
+		value.AppendChild(valueChildren)
+	}
+	value = value.Children[0]
+	c.Cookie = value.Children[0].Data.Bytes()
+	//c.RefreshDeletes = uint32(value.Children[0].Value.(int64))
+	return c, nil
 }
 
 func (c *ControlSyncDone) String() string {
@@ -156,5 +167,3 @@ func (c *ControlSyncDone) String() string {
 		c.Cookie,
 		c.RefreshDeletes)
 }
-
-

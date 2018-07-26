@@ -426,7 +426,7 @@ func DecodeControl(packet *ber.Packet) (Control, error) {
 		return c, nil
 	default:
 		if instance, ok := ControlTypeInstanceMap[ControlType]; ok {
-			return instance.Decode(ControlType,Criticality,value)
+			return instance.Decode(ControlType, Criticality, value)
 		}
 		c := new(ControlString)
 		c.ControlType = ControlType
