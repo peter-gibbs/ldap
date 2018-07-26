@@ -112,7 +112,9 @@ func (c *ControlSyncState) Decode(ControlType string, Criticality bool, value *b
 	value = value.Children[0]
 	c.State = uint32(value.Children[0].Value.(int64))
 	c.EntryUUID = value.Children[1].Data.Bytes()
-	c.Cookie = value.Children[2].Data.Bytes()
+	if len(value.Children) > 2 {
+		c.Cookie = value.Children[2].Data.Bytes()
+    }
 	return c, nil
 }
 
