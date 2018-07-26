@@ -73,9 +73,15 @@ func (c *ControlSyncRequest) GetControlType() string {
 }
 
 // String returns a human-readable description
-// TODO Write this properly
+// TODO Add a mode to string conversion
 func (c *ControlSyncRequest) String() string {
-    return fmt.Sprintf("Sync Request")
+	return fmt.Sprintf(
+		"Control Type: %s (%q)  Criticality: %t  Mode: %d  Cookie: %q",
+		ControlTypeMap[ControlTypeSyncRequest],
+		ControlTypeSyncRequest,
+		c.Criticality,
+		c.Mode,
+		c.Cookie)
 }
 
 
@@ -99,7 +105,13 @@ func (c *ControlSyncState) Decode(ControlType string, Criticality bool, value *b
 }
 
 func (c *ControlSyncState) String() string {
-    return fmt.Sprintf("Sync State")
+	return fmt.Sprintf(
+		"Control Type: %s (%q)  State: %d  UUID: %q  Cookie: %q",
+		ControlTypeMap[ControlTypeSyncState],
+		ControlTypeSyncState,
+		c.State,
+		c.EntryUUID,
+		c.Cookie)
 }
 
 
@@ -137,7 +149,12 @@ func (c *ControlSyncDone) Decode(ControlType string, Criticality bool, value *be
 }
 
 func (c *ControlSyncDone) String() string {
-    return fmt.Sprintf("Sync Done")
+	return fmt.Sprintf(
+		"Control Type: %s (%q)  Cookie: %q  Refresh Deletes: %t",
+		ControlTypeMap[ControlTypeSyncDone],
+		ControlTypeSyncDone,
+		c.Cookie,
+		c.RefreshDeletes)
 }
 
 
