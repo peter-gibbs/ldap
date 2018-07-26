@@ -27,6 +27,13 @@ var ControlTypeMap = map[string]string{
 	ControlTypeManageDsaIT:          "Manage DSA IT",
 }
 
+// ControlTypeInstanceMap maps controls to empty instances
+var ControlTypeInstanceMap = map[string]Control{
+	ControlTypePaging:               &ControlPaging{},
+	ControlTypeBeheraPasswordPolicy: &ControlBeheraPasswordPolicy{},
+	ControlTypeManageDsaIT:          &ControlManageDsaIT{},
+}
+
 // Control defines an interface controls provide to encode and describe themselves
 type Control interface {
 	// GetControlType returns the OID
@@ -35,6 +42,8 @@ type Control interface {
 	Encode() *ber.Packet
 	// String returns a human-readable description
 	String() string
+	// Decode returns a control read from the given packet, or nil if no recognized control can be made
+	Decode(ControlType string, Criticality bool, value *ber.Packet) (Control, error)
 }
 
 // ControlString implements the Control interface for simple controls
@@ -58,6 +67,11 @@ func (c *ControlString) Encode() *ber.Packet {
 	}
 	packet.AppendChild(ber.NewString(ber.ClassUniversal, ber.TypePrimitive, ber.TagOctetString, string(c.ControlValue), "Control Value"))
 	return packet
+}
+
+// Decode returns a control read from the given packet, or nil if no recognized control can be made
+func (c *ControlString) Decode(ControlType string, Criticality bool, value *ber.Packet) (Control, error) {
+	return nil, nil
 }
 
 // String returns a human-readable description
@@ -94,6 +108,11 @@ func (c *ControlPaging) Encode() *ber.Packet {
 
 	packet.AppendChild(p2)
 	return packet
+}
+
+// Decode returns a control read from the given packet, or nil if no recognized control can be made
+func (c *ControlPaging) Decode(ControlType string, Criticality bool, value *ber.Packet) (Control, error) {
+	return nil, nil
 }
 
 // String returns a human-readable description
@@ -137,6 +156,11 @@ func (c *ControlBeheraPasswordPolicy) Encode() *ber.Packet {
 	return packet
 }
 
+// Decode returns a control read from the given packet, or nil if no recognized control can be made
+func (c *ControlBeheraPasswordPolicy) Decode(ControlType string, Criticality bool, value *ber.Packet) (Control, error) {
+	return nil, nil
+}
+
 // String returns a human-readable description
 func (c *ControlBeheraPasswordPolicy) String() string {
 	return fmt.Sprintf(
@@ -166,6 +190,11 @@ func (c *ControlVChuPasswordMustChange) Encode() *ber.Packet {
 	return nil
 }
 
+// Decode returns a control read from the given packet, or nil if no recognized control can be made
+func (c *ControlVChuPasswordMustChange) Decode(ControlType string, Criticality bool, value *ber.Packet) (Control, error) {
+	return nil, nil
+}
+
 // String returns a human-readable description
 func (c *ControlVChuPasswordMustChange) String() string {
 	return fmt.Sprintf(
@@ -190,6 +219,11 @@ func (c *ControlVChuPasswordWarning) GetControlType() string {
 // Encode returns the ber packet representation
 func (c *ControlVChuPasswordWarning) Encode() *ber.Packet {
 	return nil
+}
+
+// Decode returns a control read from the given packet, or nil if no recognized control can be made
+func (c *ControlVChuPasswordWarning) Decode(ControlType string, Criticality bool, value *ber.Packet) (Control, error) {
+	return nil, nil
 }
 
 // String returns a human-readable description
@@ -222,6 +256,11 @@ func (c *ControlManageDsaIT) Encode() *ber.Packet {
 		packet.AppendChild(ber.NewBoolean(ber.ClassUniversal, ber.TypePrimitive, ber.TagBoolean, c.Criticality, "Criticality"))
 	}
 	return packet
+}
+
+// Decode returns a control read from the given packet, or nil if no recognized control can be made
+func (c *ControlManageDsaIT) Decode(ControlType string, Criticality bool, value *ber.Packet) (Control, error) {
+	return nil, nil
 }
 
 // String returns a human-readable description
@@ -386,6 +425,9 @@ func DecodeControl(packet *ber.Packet) (Control, error) {
 
 		return c, nil
 	default:
+		if instance, ok := ControlTypeInstanceMap[ControlType]; ok {
+			return instance.Decode(ControlType,Criticality,value)
+		}
 		c := new(ControlString)
 		c.ControlType = ControlType
 		c.Criticality = Criticality
