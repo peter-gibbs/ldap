@@ -120,6 +120,8 @@ type Entry struct {
 	DN string
 	// Attributes are the returned attributes for the entry
 	Attributes []*EntryAttribute
+	// Controls are the returned controls
+	Controls []Control
 }
 
 // GetAttributeValues returns the values for the named attribute, or an empty list
@@ -424,6 +426,15 @@ func (l *Conn) Search(searchRequest *SearchRequest) (*SearchResult, error) {
 					attr.ByteValues = append(attr.ByteValues, value.ByteValue)
 				}
 				entry.Attributes = append(entry.Attributes, attr)
+			}
+			if len(packet.Children) == 3 {
+				for _, child := range packet.Children[2].Children {
+					decodedChild, err := DecodeControl(child)
+					if err != nil {
+						return nil, fmt.Errorf("failed to decode child control: %s", err)
+					}
+					entry.Controls = append(entry.Controls, decodedChild)
+				}
 			}
 			result.Entries = append(result.Entries, entry)
 		case 5:
