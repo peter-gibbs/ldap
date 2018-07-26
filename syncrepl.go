@@ -22,17 +22,6 @@ type ControlSyncRequest struct {
     ReloadHint  bool   // BOOLEAN DEFAULT FALSE
 }
 
-type ControlSyncState struct {
-    State        int   // ENUMERATED 0=present, 1=add, 2=modify, 3=delete
-	EntryUUID	[]byte	// syncUUID
-    Cookie      []byte // syncCookie OPTIONAL
-}
-
-type ControlSyncDone struct {
-    Criticality bool
-    Cookie      []byte // syncCookie OPTIONAL
-    RefreshDeletes  bool   // BOOLEAN DEFAULT FALSE
-}
 
 func init() {
 	// ControlTypeMap maps controls to text descriptions
@@ -89,6 +78,13 @@ func (c *ControlSyncRequest) String() string {
     return fmt.Sprintf("Sync Request")
 }
 
+
+type ControlSyncState struct {
+    State        int   // ENUMERATED 0=present, 1=add, 2=modify, 3=delete
+	EntryUUID	[]byte	// syncUUID
+    Cookie      []byte // syncCookie OPTIONAL
+}
+
 func (c *ControlSyncState) GetControlType() string {
     return ControlTypeSyncState
 }
@@ -106,6 +102,13 @@ func (c *ControlSyncState) String() string {
     return fmt.Sprintf("Sync State")
 }
 
+
+type ControlSyncDone struct {
+    Criticality bool
+    Cookie      []byte // syncCookie OPTIONAL
+    RefreshDeletes  bool   // BOOLEAN DEFAULT FALSE
+}
+
 func (c *ControlSyncDone) GetControlType() string {
     return ControlTypeSyncDone
 }
@@ -116,7 +119,21 @@ func (c *ControlSyncDone) Encode() *ber.Packet {
 
 // Decode returns a control read from the given packet, or nil if no recognized control can be made
 func (c *ControlSyncDone) Decode(ControlType string, Criticality bool, value *ber.Packet) (Control, error) {
-	return nil, nil
+		c = new(ControlSyncDone)
+		c.Criticality = Criticality
+		if value.Value != nil {
+			valueChildren, err := ber.DecodePacketErr(value.Data.Bytes())
+			if err != nil {
+				return nil, fmt.Errorf("failed to decode data bytes: %s", err)
+			}
+			value.Data.Truncate(0)
+			value.Value = nil
+			value.AppendChild(valueChildren)
+		}
+		value = value.Children[0]
+		c.Cookie = value.Children[0].Data.Bytes()
+		//c.RefreshDeletes = uint32(value.Children[0].Value.(int64))
+		return c, nil
 }
 
 func (c *ControlSyncDone) String() string {
