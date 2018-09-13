@@ -368,6 +368,20 @@ func (l *Conn) SearchWithPaging(searchRequest *SearchRequest, pagingSize uint32)
 
 // Search performs the given search request
 func (l *Conn) Search(searchRequest *SearchRequest) (*SearchResult, error) {
+	msgCtx, err := issueSearchRequest(l,searchRequest)
+	if err != nil {
+		return nil, err
+	}
+	defer l.finishMessage(msgCtx)
+
+	result, err := fetchSearchResult(l,msgCtx)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func issueSearchRequest(l *Conn, searchRequest *SearchRequest) (*messageContext, error) {
 	packet := ber.Encode(ber.ClassUniversal, ber.TypeConstructed, ber.TagSequence, nil, "LDAP Request")
 	packet.AppendChild(ber.NewInteger(ber.ClassUniversal, ber.TypePrimitive, ber.TagInteger, l.nextMessageID(), "MessageID"))
 	// encode search request
@@ -387,13 +401,7 @@ func (l *Conn) Search(searchRequest *SearchRequest) (*SearchResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer l.finishMessage(msgCtx)
-
-	result, err := fetchSearchResult(l, msgCtx)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
+	return msgCtx, nil
 }
 
 func fetchSearchResult(l *Conn, msgCtx *messageContext) (*SearchResult, error) {
