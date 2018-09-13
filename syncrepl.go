@@ -15,6 +15,12 @@ const (
 	ControlTypeSyncDone    = "1.3.6.1.4.1.4203.1.9.1.3"
 )
 
+// Sync Request mode
+const (
+	SyncModeRefreshOnly  = 1
+	SyncModeRefreshAndPersist  = 3
+)
+
 type ControlSyncRequest struct {
 	Criticality bool
 	Mode        int    // ENUMERATED 1=refreshOnly 3=refreshAndPersist
@@ -82,6 +88,14 @@ func (c *ControlSyncRequest) String() string {
 		c.Mode,
 		c.Cookie)
 }
+
+// Sync State
+const (
+	SyncStatePresent = 0
+	SyncStateAdd = 1
+	SyncStateModify = 2
+	SyncStateDelete = 3
+)
 
 type ControlSyncState struct {
 	State     uint32    // ENUMERATED 0=present, 1=add, 2=modify, 3=delete
