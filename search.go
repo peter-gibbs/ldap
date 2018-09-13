@@ -389,6 +389,14 @@ func (l *Conn) Search(searchRequest *SearchRequest) (*SearchResult, error) {
 	}
 	defer l.finishMessage(msgCtx)
 
+	result, err := fetchSearchResult(l, msgCtx)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func fetchSearchResult(l *Conn, msgCtx *messageContext) (*SearchResult, error) {
 	result := &SearchResult{
 		Entries:   make([]*Entry, 0),
 		Referrals: make([]string, 0),
@@ -401,7 +409,7 @@ func (l *Conn) Search(searchRequest *SearchRequest) (*SearchResult, error) {
 		if !ok {
 			return nil, NewError(ErrorNetwork, errors.New("ldap: response channel closed"))
 		}
-		packet, err = packetResponse.ReadPacket()
+		packet, err := packetResponse.ReadPacket()
 		l.Debug.Printf("%d: got response %p", msgCtx.id, packet)
 		if err != nil {
 			return nil, err
