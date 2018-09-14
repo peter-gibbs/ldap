@@ -471,23 +471,26 @@ func (l *Conn) fetchSearchResult(msgCtx *messageContext) (*SearchResult, error) 
 		case 19:
 			result.Referrals = append(result.Referrals, packet.Children[1].Children[0].Value.(string))
 		case 25:	// Intermediate Response - currently the only expected type is Sync Info
-			// TODO Move this code into a separate function
+			// TODO Move this code into a separate function?
 			c := packet.Children[1]
 			if len(c.Children) >= 1 && c.Children[0].Tag == 0 {
 				oid := ber.DecodeString(c.Children[0].Data.Bytes())
 				if oid == "1.3.6.1.4.1.4203.1.9.1.4" {	// TODO Add a constant for Sync Info Message
 					siv := ber.DecodePacket(c.Children[1].Data.Bytes())
 					ber.PrintPacket(siv)
-					//l.Debug.Printf("%d: found siv, tag=%v, children=%d", msgCtx.id, siv.Tag, len(siv.Children))
 					if siv.Tag == 3 { // For now we only handle syncIdSet
-						// TODO need a decode bool function - in ber?
 						rd := siv.Children[1].Value.(bool)
-						//val, _ := parseInt64(siv.Children[1].Data.Bytes())
-						//rd := val != 0
 						l.Debug.Printf("%d: found syncIdSet, rd=%v", msgCtx.id, rd)
-						// siv.Children[2] = set of syncUUID
-						for _, s := range siv.Children[2].Children {
+						for _, s := range siv.Children[2].Children { // SET OF syncUUID
 							l.Debug.Printf("%d: syncUUID=%v", msgCtx.id, s.Value)
+							entry := new(Entry)
+							attr := new(EntryAttribute)
+							attr.Name = "entryUUID"
+							attr.Values = []string{s.Value.(string)}
+							attr.ByteValues = [][]byte{s.ByteValue}
+							entry.Attributes = append(entry.Attributes, attr)
+							// TODO Create a control with type delete or present as appropriate
+							result.Entries = append(result.Entries, entry)
 						}
 					}
 				}
@@ -497,22 +500,3 @@ func (l *Conn) fetchSearchResult(msgCtx *messageContext) (*SearchResult, error) 
 	l.Debug.Printf("%d: returning", msgCtx.id)
 	return result, nil
 }
-
-// TODO This is in ber - export it or implement DecodeBool
-func parseInt64(bytes []byte) (ret int64, err error) {
-	if len(bytes) > 8 {
-		// We'll overflow an int64 in this case.
-		err = fmt.Errorf("integer too large")
-		return
-	}
-	for bytesRead := 0; bytesRead < len(bytes); bytesRead++ {
-		ret <<= 8
-		ret |= int64(bytes[bytesRead])
-	}
-
-	// Shift up and down in order to sign extend the result.
-	ret <<= 64 - uint8(len(bytes))*8
-	ret >>= 64 - uint8(len(bytes))*8
-	return
-}
-
