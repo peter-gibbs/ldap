@@ -475,7 +475,7 @@ func (l *Conn) fetchSearchResult(msgCtx *messageContext) (*SearchResult, error) 
 			c := packet.Children[1]
 			if len(c.Children) >= 1 && c.Children[0].Tag == 0 {
 				oid := ber.DecodeString(c.Children[0].Data.Bytes())
-				if oid == "1.3.6.1.4.1.4203.1.9.1.4" {	// TODO Add a constant for Sync Info Message
+				if oid == IntermediateResponseSyncInfo {	// TODO move code to syncrepl.go
 					siv := ber.DecodePacket(c.Children[1].Data.Bytes())
 					ber.PrintPacket(siv)
 					if siv.Tag == 3 { // For now we only handle syncIdSet
@@ -489,7 +489,9 @@ func (l *Conn) fetchSearchResult(msgCtx *messageContext) (*SearchResult, error) 
 							attr.Values = []string{s.Value.(string)}
 							attr.ByteValues = [][]byte{s.ByteValue}
 							entry.Attributes = append(entry.Attributes, attr)
-							// TODO Create a control with type delete or present as appropriate
+							// TODO set State appropriately
+							syncState := &ControlSyncState{State:3,EntryUUID:s.ByteValue}
+							result.Controls = append(result.Controls, syncState)
 							result.Entries = append(result.Entries, entry)
 						}
 					}

@@ -13,6 +13,7 @@ const (
 	ControlTypeSyncRequest = "1.3.6.1.4.1.4203.1.9.1.1"
 	ControlTypeSyncState   = "1.3.6.1.4.1.4203.1.9.1.2"
 	ControlTypeSyncDone    = "1.3.6.1.4.1.4203.1.9.1.3"
+	IntermediateResponseSyncInfo    = "1.3.6.1.4.1.4203.1.9.1.4"
 )
 
 // Sync Request mode
