@@ -185,9 +185,15 @@ func (c *ControlSyncDone) String() string {
 }
 
 func (l *Conn) SyncReplRefreshOnly(searchRequest *SearchRequest, cookie []byte) ([]*SearchResult, error) {
+	// Find and update existing control or add a new one
+  syncRequest := FindControl(searchRequest.Controls, ControlTypeSyncRequest)
+  if syncRequest == nil {
         // Criticality, Mode, Cookie, ReloadHint
-        syncRequest := NewControlSyncRequest(false, SyncModeRefreshOnly, cookie, false)
+        syncRequest = NewControlSyncRequest(false, SyncModeRefreshOnly, cookie, false)
         searchRequest.Controls = append(searchRequest.Controls, syncRequest)
+  } else {
+		syncRequest.(*ControlSyncRequest).Cookie = cookie
+  }
    
 	msgCtx, err := l.issueSearchRequest(searchRequest)
 	if err != nil {
