@@ -490,7 +490,7 @@ func (l *Conn) fetchSearchResult(msgCtx *messageContext) (*SearchResult, error) 
 							//attr.Values = []string{s.Value.(string)}
 							//attr.ByteValues = [][]byte{s.ByteValue}
 							//entry.Attributes = append(entry.Attributes, attr)
-							syncState := &ControlSyncState{State:state, EntryUUID:s.ByteValue}
+							syncState := &ControlSyncState{State:uint32(state), EntryUUID:s.ByteValue}
 							entry.Controls = append(entry.Controls, syncState)
 							result.Entries = append(result.Entries, entry)
 						}
