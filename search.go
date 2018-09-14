@@ -481,10 +481,14 @@ func (l *Conn) fetchSearchResult(msgCtx *messageContext) (*SearchResult, error) 
 					//l.Debug.Printf("%d: found siv, tag=%v, children=%d", msgCtx.id, siv.Tag, len(siv.Children))
 					if siv.Tag == 3 { // For now we only handle syncIdSet
 						// TODO need a decode bool function - in ber?
-						val, _ := parseInt64(siv.Children[1].Data.Bytes())
-						rd := val != 0
+						rd := siv.Children[1].Value.(bool)
+						//val, _ := parseInt64(siv.Children[1].Data.Bytes())
+						//rd := val != 0
 						l.Debug.Printf("%d: found syncIdSet, rd=%v", msgCtx.id, rd)
 						// siv.Children[2] = set of syncUUID
+						for _, s := range siv.Children[2].Children {
+							l.Debug.Printf("%d: syncUUID=%v", msgCtx.id, s.Value)
+						}
 					}
 				}
 			}
