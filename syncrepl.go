@@ -195,19 +195,26 @@ func (l *Conn) SyncReplRefreshOnly(searchRequest *SearchRequest, cookie []byte) 
 	}
 	defer l.finishMessage(msgCtx)
 
+  var sr []*SearchResult
+
   // First result batch contains entries added or changed since cookie
 	added, err := l.fetchSearchResult(msgCtx)
 	if err != nil {
 		return nil, err
 	}
+  sr = append(sr, added)
 
   // Second result batch contains entries still present
   // TODO This won't have any results if cookie was null, will we still get an empty batch??
-	present, err := l.fetchSearchResult(msgCtx)
-	if err != nil {
-		return nil, err
-	}
+  // Either we don't get the second batch, or our logic is faulty somewhere
+  if cookie != nil {
+		present, err := l.fetchSearchResult(msgCtx)
+		if err != nil {
+			return nil, err
+		}
+    sr = append(sr, present)
+  }
 
-	return []*SearchResult{added,present}, nil
+	return sr, nil
 }
 
