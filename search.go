@@ -476,17 +476,16 @@ func (l *Conn) fetchSearchResult(msgCtx *messageContext) (*SearchResult, error) 
 			if len(c.Children) >= 1 && c.Children[0].Tag == 0 {
 				oid := ber.DecodeString(c.Children[0].Data.Bytes())
 				if oid == "1.3.6.1.4.1.4203.1.9.1.4" {	// TODO Add a constant for Sync Info Message
-					// For now we only handle syncIdSet (tag 3)
 					siv := ber.DecodePacket(c.Children[1].Data.Bytes())
-					l.Debug.Printf("%d: found siv, tag=%v, children=%d", msgCtx.id, siv.Tag, len(siv.Children))
-					/*
-					if siv.Tag == 3 {
+					ber.PrintPacket(siv)
+					//l.Debug.Printf("%d: found siv, tag=%v, children=%d", msgCtx.id, siv.Tag, len(siv.Children))
+					if siv.Tag == 3 { // For now we only handle syncIdSet
 						// TODO need a decode bool function - in ber?
-						val, _ := parseInt64(c.Children[1].Children[0].Children[1].Data.Bytes())
+						val, _ := parseInt64(siv.Children[1].Data.Bytes())
 						rd := val != 0
 						l.Debug.Printf("%d: found syncIdSet, rd=%v", msgCtx.id, rd)
+						// siv.Children[2] = set of syncUUID
 					}
-					*/
 				}
 			}
 		}
