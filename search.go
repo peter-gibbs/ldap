@@ -473,7 +473,7 @@ func (l *Conn) fetchSearchResult(msgCtx *messageContext) (*SearchResult, error) 
 		case 25:	// Intermediate Response - currently the only expected type is Sync Info
 			c := packet.Children[1]
 			if len(c.Children) >= 1 && c.Children[0].Tag == 0 {
-				oid := c.Children[0].Value.(string)
+				oid := ber.DecodeString(c.Children[0].Data.Bytes())
 				l.Debug.Printf("%d: Intermediate Response oid:%s", msgCtx.id, oid)
 			}
 		}
