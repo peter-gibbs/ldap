@@ -183,3 +183,31 @@ func (c *ControlSyncDone) String() string {
 		c.Cookie,
 		c.RefreshDeletes)
 }
+
+func (l *Conn) SyncReplRefreshOnly(searchRequest *SearchRequest, cookie []byte) ([]*SearchResult, error) {
+        // Criticality, Mode, Cookie, ReloadHint
+        syncRequest := NewControlSyncRequest(false, SyncModeRefreshOnly, cookie, false)
+        searchRequest.Controls = append(searchRequest.Controls, syncRequest)
+   
+	msgCtx, err := l.issueSearchRequest(searchRequest)
+	if err != nil {
+		return nil, err
+	}
+	defer l.finishMessage(msgCtx)
+
+  // First result batch contains entries added or changed since cookie
+	added, err := l.fetchSearchResult(msgCtx)
+	if err != nil {
+		return nil, err
+	}
+
+  // Second result batch contains entries still present
+  // TODO This won't have any results if cookie was null, will we still get an empty batch??
+	present, err := l.fetchSearchResult(msgCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	return []*SearchResult{added,present}, nil
+}
+
