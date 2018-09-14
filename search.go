@@ -470,6 +470,12 @@ func (l *Conn) fetchSearchResult(msgCtx *messageContext) (*SearchResult, error) 
 			foundSearchResultDone = true
 		case 19:
 			result.Referrals = append(result.Referrals, packet.Children[1].Children[0].Value.(string))
+		case 25:	// Intermediate Response - currently the only expected type is Sync Info
+			c := packet.Children[1]
+			if len(c.Children) >= 1 && c.Children[0].Tag == 0 {
+				oid := c.Children[0].Value.(string)
+				l.Debug.Printf("%d: Intermediate Response oid:%s", msgCtx.id, oid)
+			}
 		}
 	}
 	l.Debug.Printf("%d: returning", msgCtx.id)
