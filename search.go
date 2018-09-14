@@ -471,26 +471,26 @@ func (l *Conn) fetchSearchResult(msgCtx *messageContext) (*SearchResult, error) 
 		case 19:
 			result.Referrals = append(result.Referrals, packet.Children[1].Children[0].Value.(string))
 		case 25:	// Intermediate Response - currently the only expected type is Sync Info
-			// TODO Move this code into a separate function?
 			c := packet.Children[1]
 			if len(c.Children) >= 1 && c.Children[0].Tag == 0 {
 				oid := ber.DecodeString(c.Children[0].Data.Bytes())
-				if oid == IntermediateResponseSyncInfo {	// TODO move code to syncrepl.go
+				// TODO Implement mapping of Intermediate Response oid to handler function (in appropriate file eg syncrepl.go)
+				if oid == IntermediateResponseSyncInfo {
 					siv := ber.DecodePacket(c.Children[1].Data.Bytes())
-					ber.PrintPacket(siv)
 					if siv.Tag == 3 { // For now we only handle syncIdSet
 						rd := siv.Children[1].Value.(bool)
-						l.Debug.Printf("%d: found syncIdSet, rd=%v", msgCtx.id, rd)
+						state := SyncStatePresent
+						if rd {
+							state = SyncStateDelete
+						}
 						for _, s := range siv.Children[2].Children { // SET OF syncUUID
-							l.Debug.Printf("%d: syncUUID=%v", msgCtx.id, s.Value)
 							entry := new(Entry)
-							attr := new(EntryAttribute)
-							attr.Name = "entryUUID"
-							attr.Values = []string{s.Value.(string)}
-							attr.ByteValues = [][]byte{s.ByteValue}
-							entry.Attributes = append(entry.Attributes, attr)
-							// TODO set State appropriately
-							syncState := &ControlSyncState{State:3,EntryUUID:s.ByteValue}
+							//attr := new(EntryAttribute)
+							//attr.Name = "entryUUID"
+							//attr.Values = []string{s.Value.(string)}
+							//attr.ByteValues = [][]byte{s.ByteValue}
+							//entry.Attributes = append(entry.Attributes, attr)
+							syncState := &ControlSyncState{State:state, EntryUUID:s.ByteValue}
 							entry.Controls = append(entry.Controls, syncState)
 							result.Entries = append(result.Entries, entry)
 						}
