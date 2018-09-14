@@ -471,13 +471,42 @@ func (l *Conn) fetchSearchResult(msgCtx *messageContext) (*SearchResult, error) 
 		case 19:
 			result.Referrals = append(result.Referrals, packet.Children[1].Children[0].Value.(string))
 		case 25:	// Intermediate Response - currently the only expected type is Sync Info
+			// TODO Move this code into a separate function
 			c := packet.Children[1]
 			if len(c.Children) >= 1 && c.Children[0].Tag == 0 {
 				oid := ber.DecodeString(c.Children[0].Data.Bytes())
-				l.Debug.Printf("%d: Intermediate Response oid:%s", msgCtx.id, oid)
+				if oid == "1.3.6.1.4.1.4203.1.9.1.4" {	// TODO Add a constant for Sync Info Message
+					// For now we only handle syncIdSet (tag 3)
+					siv := c.Children[1].Children[0]
+					if siv.Tag == 3 {
+						// TODO need a decode bool function - in ber?
+						val, _ := parseInt64(c.Children[1].Children[0].Children[1].Data.Bytes())
+						rd := val != 0
+						l.Debug.Printf("%d: found syncIdSet, rd=%v", msgCtx.id, rd)
+					}
+				}
 			}
 		}
 	}
 	l.Debug.Printf("%d: returning", msgCtx.id)
 	return result, nil
 }
+
+// TODO This is in ber - export it or implement DecodeBool
+func parseInt64(bytes []byte) (ret int64, err error) {
+	if len(bytes) > 8 {
+		// We'll overflow an int64 in this case.
+		err = fmt.Errorf("integer too large")
+		return
+	}
+	for bytesRead := 0; bytesRead < len(bytes); bytesRead++ {
+		ret <<= 8
+		ret |= int64(bytes[bytesRead])
+	}
+
+	// Shift up and down in order to sign extend the result.
+	ret <<= 64 - uint8(len(bytes))*8
+	ret >>= 64 - uint8(len(bytes))*8
+	return
+}
+
